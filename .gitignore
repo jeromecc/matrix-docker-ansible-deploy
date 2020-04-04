@@ -2,3 +2,4 @@
 !/inventory/.gitkeep
 !/inventory/host_vars/.gitkeep
 inventory/host_vars/matrix.medica.im/
+/roles/*/files/scratchpad

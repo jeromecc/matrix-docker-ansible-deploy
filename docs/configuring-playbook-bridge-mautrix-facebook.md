@@ -8,27 +8,22 @@ See the project's [documentation](https://github.com/tulir/mautrix-facebook/wiki
 matrix_mautrix_facebook_enabled: true
 ```
 
-## Usage
 
-You then need to start a chat with `@facebookbot:YOUR_DOMAIN` (where `YOUR_DOMAIN` is your base domain, not the `matrix.` domain).
+## Set up Double Puppeting
 
+If you'd like to use [Double Puppeting](https://github.com/tulir/mautrix-facebook/wiki/Authentication#double-puppeting) (hint: you most likely do), you have 2 ways of going about it.
 
-### Set up bridging
+### Method 1: automatically, by enabling Shared Secret Auth
 
-Send `login YOUR_FACEBOOK_EMAIL_ADDRESS YOUR_FACEBOOK_PASSWORD` to the bridge bot to enable bridging for your Facebook/Messenger account.
+The bridge will automatically perform Double Puppeting if you enable [Shared Secret Auth](configuring-playbook-shared-secret-auth.md) for this playbook.
 
-You can learn more here about authentication from the bridge's [official documentation on Authentication](https://github.com/tulir/mautrix-facebook/wiki/Authentication).
+This is the recommended way of setting up Double Puppeting, as it's easier to accomplish, works for all your users automatically, and has less of a chance of breaking in the future.
 
-If you run into trouble, check the [Troubleshooting](#troubleshooting) section below.
+### Method 2: manually, by asking each user to provide a working access token
 
-After successfully enabling bridging, you may wish to [set up Double Puppeting](#set-up-double-puppeting).
+**Note**: This method for enabling Double Puppeting can be configured only after you've already set up bridging (see [Usage](#usage)).
 
-
-### Set up Double Puppeting
-
-**Note**: Double Puppeting can be configured only after you've already [set up bridging](#set-up-bridging).
-
-If you'd like to use [Double Puppeting](https://github.com/tulir/mautrix-facebook/wiki/Authentication#double-puppeting) (hint: you most likely do), you should:
+When using this method, **each user** that wishes to enable Double Puppeting needs to follow the following steps:
 
 - retrieve a Matrix access token for yourself. You can use the following command:
 
@@ -43,13 +38,51 @@ https://matrix.DOMAIN/_matrix/client/r0/login
 - make sure you don't log out the `Mautrix-Facebook` device some time in the future, as that would break the Double Puppeting feature
 
 
+## Usage
+
+You then need to start a chat with `@facebookbot:YOUR_DOMAIN` (where `YOUR_DOMAIN` is your base domain, not the `matrix.` domain).
+
+Send `login YOUR_FACEBOOK_EMAIL_ADDRESS YOUR_FACEBOOK_PASSWORD` to the bridge bot to enable bridging for your Facebook/Messenger account.
+
+You can learn more here about authentication from the bridge's [official documentation on Authentication](https://github.com/tulir/mautrix-facebook/wiki/Authentication).
+
+If you run into trouble, check the [Troubleshooting](#troubleshooting) section below.
+
+After successfully enabling bridging, you may wish to [set up Double Puppeting](#set-up-double-puppeting), if you haven't already done so.
+
+
+## Set up community-grouping
+
+This is an **optional feature** that you may wish to enable.
+
+The Facebook bridge can create a Matrix community for you, which would contain all your chats and contacts.
+
+For this to work, the bridge's bot needs to have permissions to create communities (also referred to as groups).
+Since the bot is a non-admin user, you need to enable such group-creation for non-privileged users in [Synapse's settings](configuring-playbook-synapse.md).
+
+Here's an example configuration:
+
+```yaml
+matrix_synapse_configuration_extension_yaml: |
+  enable_group_creation: true
+  group_creation_prefix: "unofficial/"
+
+matrix_mautrix_facebook_configuration_extension_yaml: |
+  bridge:
+    community_template: "unofficial/facebook_{localpart}={server}"
+```
+
+Once the bridge is restarted, it would create a community and invite you to it. You need to accept the community invitation manually.
+If you don't see all your contacts, you may wish to send a `sync` message to the bot.
+
+
 ## Troubleshooting
 
 ### Facebook rejecting login attempts and forcing you to change password
 
 If your Matrix server is in a wildly different location than where you usually use your Facebook account from, the bridge's login attempts may be outright rejected by Facebook. Along with that, Facebook may even force you to change the account's password.
 
-If you happen to run into this problem while [setting up bridging](#set-up-bridging), try to first get a successful session up by logging in to Facebook through the Matrix server's IP address.
+If you happen to run into this problem while [setting up bridging](#usage), try to first get a successful session up by logging in to Facebook through the Matrix server's IP address.
 
 The easiest way to do this may be to use [sshuttle](https://sshuttle.readthedocs.io/) to proxy your traffic through the Matrix server.
 
@@ -63,4 +96,4 @@ Once connected, you should be able to verify that you're browsing the web throug
 
 Then proceed to log in to [Facebook/Messenger](https://www.facebook.com/).
 
-Once logged in, proceed to [set up bridging](#set-up-bridging).
+Once logged in, proceed to [set up bridging](#usage).

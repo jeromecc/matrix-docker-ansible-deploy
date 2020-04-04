@@ -17,13 +17,8 @@ As [per the Server-Server specification](https://matrix.org/docs/spec/server_ser
 
 Server delegation can be configured using DNS SRV records or by setting up a `/.well-known/matrix/server` file on the base domain (`<your-domain.com>`).
 
-We have discussed the DNS SRV record method already in the "`_matrix._tcp` SRV record setup (temporary requirement)" section of [Configuring DNS](configuring-dns.md).
-
-Both methods have their place and will continue to do so. Usually, you would need to use just one of these delegation methods.
+Both methods have their place and will continue to do so. You only need to use just one of these delegation methods.
 For simplicity reasons, our setup advocates for the `/.well-known/matrix/server` method and guides you into using that.
-For backward compatibility with older Synapse servers (< v0.99), however, for now you are also required to set up a `_matrix._tcp` DNS SRV record (in addition to the `/.well-known/matrix/server` file on the base domain).
-
-As the Synapse server progresses towards v1.0, only the `/.well-known/matrix/server` file will be used by us, unless you have a more special setup necessitating a DNS SRV record. At that future moment, you would need to remove the `_matrix._tcp` SRV record because Synapse v1.0+ will do the wrong thing if a SRV record exists.
 
 To learn how to set up `/.well-known/matrix/server`, read the Installing section below.
 
@@ -113,6 +108,25 @@ server {
 
 ```caddy
 proxy /.well-known/matrix https://matrix.DOMAIN
+```
+
+**For HAProxy**, it would be something like this:
+
+```haproxy
+frontend www-https
+	# Select a Challenge for Matrix federation redirect
+	acl matrix-acl path_beg /.well-known/matrix/
+	# Use the challenge backend if the challenge is set
+	use_backend matrix-backend if matrix-acl
+backend matrix-backend
+	# Redirects the .well-known matrix to the matrix server for federation.
+	http-request set-header Host matrix.example.com
+	server matrix matrix.example.com:80
+	# Map url path as ProxyPass does
+	reqirep ^(GET|POST|HEAD)\ /.well-known/matrix/(.*) \1\ /\2
+	# Rewrite redirects as ProxyPassReverse does
+	acl response-is-redirect res.hdr(Location) -m found
+	rsprep ^Location:\ (http|https)://matrix.example.com\/(.*) Location:\ \1://matrix.exapmle.com/.well-known/matrix/\2 if response-is-redirect
 ```
 
 Make sure to:

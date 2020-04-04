@@ -3,7 +3,9 @@
 
 matrix_mxisd_enabled: true
 
-matrix_mxisd_docker_image: "kamax/mxisd:1.4.4"
+matrix_mxisd_docker_image: "kamax/mxisd:1.4.6"
+matrix_mxisd_docker_image_force_pull: "{{ matrix_mxisd_docker_image.endswith(':latest') }}"
+
 matrix_mxisd_base_path: "{{ matrix_base_data_path }}/mxisd"
 matrix_mxisd_config_path: "{{ matrix_mxisd_base_path }}/config"
 matrix_mxisd_data_path: "{{ matrix_mxisd_base_path }}/data"
@@ -65,6 +67,11 @@ matrix_mxisd_threepid_medium_email_custom_matrixid_template: ""
 
 # Controls whether the self-check feature should validate SSL certificates.
 matrix_mxisd_self_check_validate_certificates: true
+
+# Controls mxisd logging verbosity for troubleshooting.
+#
+# According to: https://github.com/kamax-matrix/mxisd/blob/master/docs/troubleshooting.md#increase-verbosity
+matrix_mxisd_verbose_logging: false
 
 # Default mxisd configuration template which covers the generic use case.
 # You can customize it by controlling the various variables inside it.

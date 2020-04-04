@@ -1,10 +1,372 @@
+# 2020-02-26
+
+## Riot-web themes are here
+
+The playbook now makes it easy to install custom riot-web themes.
+
+To learn more, take a look at our [riot-web documentation on Themes](docs/configuring-playbook-riot-web.md#themes).
+
+
+# 2020-02-24
+
+## Customize the server name in Riot's login page
+
+You can now customize the server name string that Riot-web displays in its login page.
+
+These playbook variables, with these default values, have been added:
+
+```
+matrix_riot_web_default_server_name: "{{ matrix_domain }}"
+```
+
+The login page previously said "Sign in to your Matrix account on matrix.example.org" (the homeserver's domain name). It will now say "Sign in ... on example.org" (the server name) by default, or "Sign in ... on Our Server" if you set the variable to "Our Server".
+
+To support this, the config.json template is changed to use the configuration key `default_server_config` for setting the default HS/IS, and the new configuration key `server_name` is added in there.
+
+
+# 2020-01-30
+
+## Disabling TLSv1.1
+
+To improve security, we've removed TLSv1.1 support from our default matrix-nginx-proxy configuration.
+
+If you need to support old clients, you can re-enable it with the following configuration: `matrix_nginx_proxy_ssl_protocols: "TLSv1.1 TLSv1.2 TLSv1.3"`
+
+
+# 2020-01-21
+
+## Postgres collation changes (action required!)
+
+By default, we've been using a UTF-8 collation for Postgres. This is known to cause Synapse some troubles (see the [relevant issue](https://github.com/matrix-org/synapse/issues/6722)) on systems that use [glibc](https://www.gnu.org/software/libc/). We run Postgres in an [Alpine Linux](https://alpinelinux.org/) container (which uses [musl](https://www.musl-libc.org/), and not glibc), so our users are likely not affected by the index corruption problem observed by others.
+
+Still, we might become affected in the future. In any case, it's imminent that Synapse will complain about databases which do not use a C collation.
+
+To avoid future problems, we recommend that you run the following command:
+
+```
+ansible-playbook -i inventory/hosts setup.yml --tags=upgrade-postgres --extra-vars='{"postgres_force_upgrade": true}'
+```
+
+It forces a [Postgres database upgrade](docs/maintenance-postgres.md#upgrading-postgresql), which would recreate your Postgres database using the proper (`C`) collation. If you are low on disk space, or run into trouble, refer to the Postgres database upgrade documentation page.
+
+
+# 2020-01-14
+
+## Added support for Appservice Webhooks
+
+Thanks to a contribution from [Björn Marten](https://github.com/tripleawwy) from [netresearch](https://www.netresearch.de/), the playbook can now install and configure [matrix-appservice-webhooks](https://github.com/turt2live/matrix-appservice-webhooks) for you. This bridge provides support for Slack-compatible webhooks.
+
+Learn more in [Setting up Appservice Webhooks](docs/configuring-playbook-bridge-appservice-webhooks.md).
+
+
+# 2020-01-12
+
+## Added support for automatic Double Puppeting for all Mautrix bridges
+
+Double Puppeting can now be easily enabled for all Mautrix bridges supported by the playbook (Facebook, Hangouts, Whatsapp, Telegram).
+
+This is possible due to those bridges' integration with [matrix-synapse-shared-secret-auth](https://github.com/devture/matrix-synapse-shared-secret-auth) - yet another component that this playbook can install for you.
+
+To get started, following the playbook's documentation for the bridge you'd like to configure.
+
+
+# 2019-12-06
+
+## Added support for an alternative method for using another webserver
+
+We have added support for making `matrix-nginx-proxy` not being so invasive, so that it would be easier to [use your own webserver](docs/configuring-playbook-own-webserver.md).
+
+The documentation has been updated with a **Method 2**, which might make "own webserver" setup easier in some cases (such as [reverse-proxying using Traefik](https://github.com/spantaleev/matrix-docker-ansible-deploy/issues/296)).
+
+**Existing users** are not affected by this and **don't need to change anything**.
+The defaults are still the same (`matrix-nginx-proxy` obtaining SSL certificates and doing everything for you automatically).
+
+
+# 2019-11-10
+
+## Tightened security around room directory publishing
+
+As per this [advisory blog post](https://matrix.org/blog/2019/11/09/avoiding-unwelcome-visitors-on-private-matrix-servers), we've decided to change the default publishing rules for the Matrix room directory.
+
+Our general goal is to favor privacy and security when running personal (family & friends) and corporate homeservers.
+Both of these likely benefit from having a more secure default of **not showing the room directory without authentication** and **not publishing the room directory over federation**.
+
+As with anything else, these new defaults can be overriden by changing the `matrix_synapse_allow_public_rooms_without_auth` and `matrix_synapse_allow_public_rooms_over_federation` variables, respectively.
+
+
+# 2019-10-05
+
+## Improved Postgres upgrading/importing
+
+Postgres [upgrading](docs/maintenance-postgres.md#upgrading-postgresql) and [importing](docs/importing-postgres.md) have been improved to add support for multiple databases and roles.
+
+Previously, the playbook would only take care of the `homeserver` database and `synapse` user.
+We now back up and restore all databases and users on the Postgres server.
+
+For now, the playbook only uses that one database (`homeserver`) and that one single user (`synapse`), so it's all the same.
+However, in the future, additional components besides Synapse may also make use the Postgres database server.
+One such example is the [matrix-appservice-slack](https://github.com/matrix-org/matrix-appservice-slack) bridge, which strongly encourages use of Postgres in its v1.0 release. We are yet to upgrade to it.
+
+Additionally, Postgres [upgrading](docs/maintenance-postgres.md#upgrading-postgresql) now uses gzipped dump files by default, to minimize disk space usage.
+
+
+# 2019-10-04
+
+## Postgres 12 support
+
+The playbook now installs [Postgres 12](https://www.postgresql.org/about/news/1976/) by default.
+
+If you have have an existing setup, it's likely running on an older Postgres version (9.x, 10.x or 11.x). You can easily upgrade by following the [upgrading PostgreSQL guide](docs/maintenance-postgres.md#upgrading-postgresql).
+
+
+# 2019-10-03
+
+## Synapse 1.4.0
+
+Synapse 1.4.0 [is out](https://matrix.org/blog/2019/10/03/synapse-1-4-0-released) with lots of changes related to privacy.
+
+Its new defaults (which we adopt as well) mean that certain old data will automatically get purged after a certain number of days. 1.4.0 automatically garbage collects redacted messages (defaults to 7 days) and removes unused IP and user agent information stored in the user_ips table (defaults to 30 days). If you'd like to preserve this data, we encourage you to look at the `redaction_retention_period` and `user_ips_max_age` options (controllable by the `matrix_synapse_redaction_retention_period` and `matrix_synapse_user_ips_max_age` playbook variables, respectively) before doing the upgrade. If you'd like to keep data indefinitely, set these variables to `null` (e.g. `matrix_synapse_redaction_retention_period: ~`).
+
+From now on the `trusted_key_servers` setting for Synapse is configurable. It still defaults to `matrix.org` just like it always has, but in a more explicit way now. If you'd like to use another trusted key server, adjust the `matrix_synapse_trusted_key_servers` playbook variable.
+
+Synapse 1.4.0 also changes lots of things related to identity server integration.
+Because Synapse will now by default be responsible for validating email addresses for user accounts, running without an identity server looks more feasible.
+We still [have concerns](https://github.com/spantaleev/matrix-docker-ansible-deploy/pull/275/files#r331104117) over disabling the identity server by default, so for now it remains enabled.
+
+
+# 2019-09-09
+
+## Synapse Simple Antispam support
+
+There have been lots of invite-spam attacks lately and [Travis](https://github.com/t2bot) has created a Synapse module ([synapse-simple-antispam](https://github.com/t2bot/synapse-simple-antispam)) to let people protect themselves.
+
+From now on, you can easily install and configure this spam checker module through the playbook.
+
+Learn more in [Setting up Synapse Simple Antispam](docs/configuring-playbook-synapse-simple-antispam.md).
+
+
+# 2019-08-25
+
+## Extensible Riot-web configuration
+
+Similarly to [Extensible Synapse configuration](#extensible-synapse-configuration) (below), Riot-web configuration is also extensible now.
+
+From now on, you can extend/override Riot-web's configuration by making use of the `matrix_riot_web_configuration_extension_json` variable.
+This should be enough for most customization needs.
+
+If you need even more power, you can now also take full control and override `matrix_riot_web_configuration_default` (or `matrix_riot_web_configuration`) directly.
+
+Learn more in [Configuring Riot-web](docs/configuring-playbook-riot-web.md).
+
+
+# 2019-08-22
+
+## Extensible Synapse configuration
+
+Previously, we had to create custom Ansible variables for each and every Synapse setting.
+This lead to too much effort (and configuration ugliness) to all of Synapse's settings, so naturally, not all features of Synapse could be controlled through the playbook.
+
+From now on, you can extend/override the Synapse server's configuration by making use of the `matrix_synapse_configuration_extension_yaml` variable.
+This should be enough for most customization needs.
+
+If you need even more power, you can now also take full control and override `matrix_synapse_configuration` (or `matrix_synapse_configuration_yaml`) directly.
+
+Learn more here in [Configuring Synapse](docs/configuring-playbook-synapse.md).
+
+
+# 2019-08-21
+
+## Slack bridging support
+
+Thanks to the [great work](https://github.com/spantaleev/matrix-docker-ansible-deploy/pull/205) of [kingoftheconnors](https://github.com/kingoftheconnors) and [Stuart Mumford (Cadair)](https://github.com/Cadair), the playbook now supports bridging to [Slack](https://slack.com) via the [appservice-slack](https://github.com/matrix-org/matrix-appservice-slack) bridge.
+
+Additional details are available in [Setting up Appservice Slack bridging](docs/configuring-playbook-bridge-appservice-slack.md).
+
+## Google Hangouts bridging support
+
+Thanks to the [great work](https://github.com/spantaleev/matrix-docker-ansible-deploy/pull/251) of [Eduardo Beltrame (Munfred)](https://github.com/Munfred) and [Robbie D (microchipster)](https://github.com/microchipster), the playbook now supports bridging to [Google Hangouts](https://hangouts.google.com/) via the [mautrix-hangouts](https://mau.dev/tulir/mautrix-hangouts) bridge.
+
+Additional details are available in [Setting up Mautrix Hangouts bridging](docs/configuring-playbook-bridge-mautrix-hangouts.md).
+
+
+# 2019-08-05
+
+## Email2Matrix support
+
+Support for [Email2Matrix](https://github.com/devture/email2matrix) has been added.
+
+It's an optional feature that you can enable via the playbook.
+
+To learn more, see the [playbook's documentation on Email2Matrix](./docs/configuring-playbook-email2matrix.md).
+
+
+# 2019-08-03
+
+## Synapse logging level has been reduced to WARNING
+
+After [some discussion in our support room](https://matrix.to/#/!PukFFdIcHgtaaHZflT:devture.com/$156476852524179TBeKy:matrix.org?via=devture.com&via=matrix.org&via=librem.one), we've decided to change the default logging level for Synapse from `INFO` to `WARNING`.
+
+This greatly reduces the number of log messages that are being logged, leading to:
+
+- much less disk space dedicated to Synapse and thus, logs kept for longer
+- easier to find some important `WARNING`, `ERROR` and `CRITICAL` messages, as they're not longer buried in thousands of non-important `INFO` messages
+
+If you'd like to track down an issue, you [can always increase the logging level as described here](./docs/maintenance-and-troubleshooting.md#increasing-synapse-logging).
+
+
+
+# 2019-07-08
+
+## Synapse Maintenance docs and synapse-janitor support are available
+
+The playbook can now help you with Synapse's maintenance.
+
+There's a new documentation page about [Synapse maintenance](./docs/maintenance-synapse.md) and another section on [Postgres vacuuming](./docs/maintenance-postgres.md#vacuuming-postgresql).
+
+Among other things, if your Postgres database has grown significantly over time, you may wish to [ask the playbook to purge unused data with synapse-janitor](./docs/maintenance-synapse.md#purging-unused-data-with-synapse-janitor) for you.
+
+
+## (BC Break) Rename run control variables
+
+Some internal playbook control variables have been renamed.
+
+This change **only affects people who run this playbook's roles from another playbook**.
+If you're using this playbook as-is, you're not affected and don't need to do anything.
+
+The following variables have been renamed:
+
+- from `run_import_postgres` to `run_postgres_import`
+- from `run_import_sqlite_db` to `run_postgres_import_sqlite_db`
+- from `run_upgrade_postgres` to `run_postgres_upgrade`
+- from `run_import_media_store` to `run_synapse_import_media_store`
+- from `run_register_user` to `run_synapse_register_user`
+- from `run_update_user_password` to `run_synapse_update_user_password`
+
+
+# 2019-07-04
+
+## Synapse no longer logs to text files
+
+Following what the official Synapse Docker image is doing ([#5565](https://github.com/matrix-org/synapse/pull/5565)) and what we've been doing for mostly everything installed by this playbook, **Synapse no longer logs to text files** (`/matrix/synapse/run/homeserver.log*`).
+
+From now on, Synapse would only log to console, which goes to systemd's journald.
+To see Synapse's logs, execute: `journalctl -fu matrix-synapse`
+
+Because of this, the following variables have become obsolete and were removed:
+
+- `matrix_synapse_max_log_file_size_mb`
+- `matrix_synapse_max_log_files_count`
+
+To prevent confusion, it'd be better if you delete all old files manually after you've upgraded (`rm -f /matrix/synapse/run/homeserver.log*`).
+
+Because Synapse is incredibly chatty when it comes to logging (here's [one such issue](https://github.com/matrix-org/synapse/issues/4751) describing the problem), if you're running an ancient distribution (like CentOS 7.0), be advised that systemd's journald default logging restrictions may not be high enough to capture all log messages generated by Synapse. This is especially true if you've got a busy (Synapse) server. We advise that you manually add `RateLimitInterval=0` and `RateLimitBurst=0` under `[Storage]` in the `/etc/systemd/journald.conf` file, followed by restarting the logging service (`systemctl restart systemd-journald`).
+
+
+# 2019-06-27
+
+## (BC Break) Discord bridge configuration is now entirely managed by the playbook
+
+Until now, the `config.yaml` file for the [Discord bridge](docs/configuring-playbook-bridge-appservice-discord.md) was managed by the playbook, but the `registration.yaml` file was not.
+
+From now on, the playbook will keep both configuration files sync for you.
+
+This means that if you were making manual changes to the `/matrix/appservice-discord/discord-registration.yaml` configuration file, those would be lost the next time you run the playbook.
+
+The bridge now stores configuration in a subdirectory (`/matrix/appservice-discord/config`).
+
+Likewise, data is now also stored in a subdirectory (`/matrix/appservice-discord/data`). When you run the playbook with an existing database file (`/matrix/appservice-discord/discord.db`), the playbook will stop the bridge and relocate the database file to the `./data` directory. There's no data-loss involved. You'll need to restart the bridge manually though (`--tags=start`).
+
+The main directory (`/matrix/appservice-discord`) may contain some leftover files (`user-store.db`, `room-store.db`, `config.yaml`, `discord-registration.yaml`, `invite_link`). These are no longer necessary and can be deleted manually.
+
+We're now following the default sample configuration for the Discord bridge.
+If you need to override some values, define them in `matrix_appservice_discord_configuration_extension_yaml`.
+
+
+# 2019-06-24
+
+## (BC Break) WhatsApp bridge configuration is now entirely managed by the playbook
+
+Until now, configuration files for the [WhatsApp bridge](docs/configuring-playbook-bridge-mautrix-whatsapp.md) were created by the playbook initially, but never modified later on.
+
+From now on, the playbook will keep the configuration in sync for you.
+
+This means that if you were making manual changes to the `/matrix/mautrix-whatsapp/config.yaml` or `/matrix/mautrix-whatsapp/registration.yaml` configuration files, those would be lost the next time you run the playbook.
+
+The bridge now stores configuration in a subdirectory (`/matrix/mautrix-whatsapp/config`), so your old configuration remains in the base directory (`/matrix/mautrix-whatsapp`).
+You need to migrate any manual changes over to the new `matrix_mautrix_whatsapp_configuration_extension_yaml` variable, so that the playbook would apply them for you.
+
+Likewise, data is now also stored in a subdirectory (`/matrix/mautrix-whatsapp/data`). When you run the playbook with an existing database file (`/matrix/mautrix-whatsapp/mautrix-whatsapp.db`), the playbook will stop the bridge and relocate the database file to the `./data` directory. There's no data-loss involved. You'll need to restart the bridge manually though (`--tags=start`).
+
+We're now following the default configuration for the WhatsApp bridge.
+
+
+# 2019-06-20
+
+## (BC Break) IRC bridge configuration is now entirely managed by the playbook
+
+Until now, configuration files for the [IRC bridge](docs/configuring-playbook-bridge-appservice-irc.md) were created by the playbook initially, but never modified later on.
+
+From now on, the playbook will keep the configuration in sync for you.
+
+This means that if you were making manual changes to the `/matrix/appservice-irc/config.yaml` or `/matrix/appservice-irc/registration.yaml` configuration files, those would be lost the next time you run the playbook.
+
+The bridge now stores configuration in a subdirectory (`/matrix/appservice-irc/config`), so your old configuration remains in the base directory (`/matrix/appservice-irc`).
+
+Previously, we asked people to configure bridged IRC servers by extending the bridge configuration (`matrix_appservice_irc_configuration_extension_yaml`). While this is still possible and will continue working forever, **we now recommend defining IRC servers in the easier to use `matrix_appservice_irc_ircService_servers` variable**. See [our IRC bridge documentation page](docs/configuring-playbook-bridge-appservice-irc.md) for an example.
+
+If you decide to continue using `matrix_appservice_irc_configuration_extension_yaml`, you might be interested to know that `ircService.databaseUri` and a few other keys now have default values in the base configuration (`matrix_appservice_irc_configuration_yaml`). You may wish to stop redefining those keys, unless you really intend to override them. You most likely only need to override `ircService.servers`.
+
+Bridge data (`passkey.pem` and database files) is now also stored in a subdirectory (`/matrix/appservice-irc/data`).
+When you run the playbook with an existing `/matrix/appservice-irc/passkey.pem` file, the playbook will stop the bridge and relocate the passkey and database files (`rooms.db` and `users.db`) to the `./data` directory. There's no data-loss involved. You'll need to restart the bridge manually though (`--tags=start`).
+
+
+# 2019-06-15
+
+## (BC Break) Telegram bridge configuration is now entirely managed by the playbook
+
+Until now, configuration files for the [Telegram bridge](docs/configuring-playbook-bridge-mautrix-telegram.md) were created by the playbook initially, but never modified later on.
+
+From now on, the playbook will keep the configuration in sync for you.
+
+This means that if you were making manual changes to the `/matrix/mautrix-telegram/config.yaml` or `/matrix/mautrix-telegram/registration.yaml` configuration files, those would be lost the next time you run the playbook.
+
+The bridge now stores configuration in a subdirectory (`/matrix/mautrix-telegram/config`), so your old configuration remains in the base directory (`/matrix/mautrix-telegram`).
+You need to migrate any manual changes over to the new `matrix_mautrix_telegram_configuration_extension_yaml` variable, so that the playbook would apply them for you.
+
+Likewise, data is now also stored in a subdirectory (`/matrix/mautrix-telegram/data`). When you run the playbook with an existing database file (`/matrix/mautrix-telegram/mautrix-telegram.db`), the playbook will stop the bridge and relocate the database file to the `./data` directory. There's no data-loss involved. You'll need to restart the bridge manually though (`--tags=start`).
+
+Also, we're now following the default configuration for the Telegram bridge, so some default configuration values are different:
+
+- `edits_as_replies` (used to be `false`, now `true`) - previously replies were not sent over to Matrix at all; ow they are sent over as a reply to the original message
+- `inline_images` (used to be `true`, now `false`) - this has to do with captioned images. Inline-image (included caption) are said to exhibit troubles on Riot iOS. When `false`, the caption arrives on the Matrix side as a separate message.
+- `authless_portals` (used to be `false`, now `true`) - creating portals from the Telegram side is now possible
+- `whitelist_group_admins` (used to be `false`, now `true`) - allows Telegram group admins to use the bot commands
+
+If the new values are not to your liking, use `matrix_mautrix_telegram_configuration_extension_yaml` to specify an override (refer to `matrix_mautrix_telegram_configuration_yaml` to figure out which variable goes where).
+
+
+# 2019-06-12
+
+## Synapse v1.0
+
+With [Synapse v1.0 now available](https://matrix.org/blog/2019/06/11/introducing-matrix-1-0-and-the-matrix-org-foundation) and most people being on at least Synapse v0.99, it's time to remove the `_matrix._tcp` DNS SRV record that we've been keeping for compatibility with old Synapse versions (<= 0.34).
+
+According to the [Server Discovery specification](https://matrix.org/docs/spec/server_server/r0.1.2.html#server-discovery), it's no harm to keep the DNS SRV record. But since it's not necessary for federating with the larger Matrix network anymore, you should be safe to get rid of it.
+
+**Note**: don't confuse the `_matrix._tcp` and `_matrix-identity._tcp` DNS SRV records. The latter, **must not** be removed.
+
+For completeness, we must say that using a `_matrix._tcp` [SRV record for Server Delegation](docs/howto-server-delegation.md#server-delegation-via-a-dns-srv-record-advanced) is still valid and useful for certain deployments. It's just that our guide recommends the [`/.well-known/matrix/server` Server Delegation method](docs/howto-server-delegation.md#server-delegation-via-a-well-known-file), due to its easier implementation when using this playbook.
+
+Besides this optional/non-urgent DNS change, assuming you're already on Synapse v0.99, upgrading to Synapse v1.0 should be as simple as [re-running the playbook](docs/maintenance-upgrading-services.md).
+
+
 # 2019-06-07
 
 ## (BC Break) Facebook bridge configuration is now entirely managed by the playbook
 
 Until now, configuration files for the [Facebook bridge](docs/configuring-playbook-bridge-mautrix-facebook.md) were created by the playbook initially, but never modified later on.
 
-From now on, the playbook will keep those configuration in sync for you.
+From now on, the playbook will keep the configuration in sync for you.
 
 This means that if you were making manual changes to the `/matrix/mautrix-facebook/config.yaml` or `/matrix/mautrix-facebook/registration.yaml` configuration files, those would be lost the next time you run the playbook.
 
@@ -51,7 +413,7 @@ As always, if you forget to remove usage of some outdated variable, the playbook
 
 # 2019-05-23
 
-## Ansible 2.8 compatibility
+## (BC Break) Ansible 2.8 compatibility
 
 Thanks to [@danbob](https://github.com/danbob), the playbook now [supports the new Ansible 2.8](https://github.com/spantaleev/matrix-docker-ansible-deploy/pull/187).
 

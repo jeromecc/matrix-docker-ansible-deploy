@@ -6,6 +6,8 @@ Table of contents:
 
 - [Getting a database terminal](#getting-a-database-terminal), for when you wish to execute SQL queries
 
+- [Vacuuming PostgreSQL](#vacuuming-postgresql), for when you wish to run a Postgres [VACUUM](https://www.postgresql.org/docs/current/sql-vacuum.html) (optimizing disk space)
+
 - [Backing up PostgreSQL](#backing-up-postgresql), for when you wish to make a backup
 
 - [Upgrading PostgreSQL](#upgrading-postgresql), for upgrading to new major versions of PostgreSQL. Such **manual upgrades are sometimes required**.
@@ -18,6 +20,19 @@ You can use the `/usr/local/bin/matrix-postgres-cli` tool to get interactive ter
 If you are using an [external Postgres server](configuring-playbook-external-postgres.md), the above tool will not be available.
 
 
+## Vacuuming PostgreSQL
+
+To perform a `FULL` Postgres [VACUUM](https://www.postgresql.org/docs/current/sql-vacuum.html), run the playbook with `--tags=run-postgres-vacuum`.
+
+Example:
+
+```bash
+ansible-playbook -i inventory/hosts setup.yml --tags=run-postgres-vacuum,start
+```
+
+**Note**: this will automatically stop Synapse temporarily and restart it later. You'll also need plenty of available disk space in your Postgres data directory (usually `/matrix/postgres/data`).
+
+
 ## Backing up PostgreSQL
 
 To make a back up of the current PostgreSQL database, make sure it's running and then execute a command like this on the server:
@@ -25,15 +40,17 @@ To make a back up of the current PostgreSQL database, make sure it's running and
 ```bash
 docker run \
 --rm \
---network matrix \
+--network=matrix \
 --env-file=/matrix/postgres/env-postgres-psql \
-postgres:11.1-alpine \
-pg_dump -h matrix-postgres \
+postgres:12.1-alpine \
+pg_dumpall -h matrix-postgres \
 | gzip -c \
 > /postgres.sql.gz
 ```
 
 If you are using an [external Postgres server](configuring-playbook-external-postgres.md), the above command will not work, because the credentials file (`/matrix/postgres/env-postgres-psql`) is not available.
+
+Restoring a backup made this way can be done by [importing it](importing-postgres.md).
 
 
 ## Upgrading PostgreSQL
@@ -49,7 +66,7 @@ This playbook can upgrade your existing Postgres setup with the following comman
 
 	ansible-playbook -i inventory/hosts setup.yml --tags=upgrade-postgres
 
-**The old Postgres data directory is backed up** automatically, by renaming to `/matrix/postgres-auto-upgrade-backup`.
+**The old Postgres data directory is backed up** automatically, by renaming it to `/matrix/postgres-auto-upgrade-backup`.
 To rename to a different path, pass some extra flags to the command above, like this: `--extra-vars="postgres_auto_upgrade_backup_data_path=/another/disk/matrix-postgres-before-upgrade"`
 
 The auto-upgrade-backup directory stays around forever, until you **manually decide to delete it**.
@@ -57,5 +74,8 @@ The auto-upgrade-backup directory stays around forever, until you **manually dec
 As part of the upgrade, the database is dumped to `/tmp`, an upgraded and empty Postgres server is started, and then the dump is restored into the new server.
 To use a different directory for the dump, pass some extra flags to the command above, like this: `--extra-vars="postgres_dump_dir=/directory/to/dump/here"`
 
-**ONLY one database is migrated** (the one specified in `matrix_postgres_db_name`, named `homeserver` by default).
-If you've created other databases in that database instance (something this playbook never does and never advises), data will be lost.
+To save disk space in `/tmp`, the dump file is gzipped on the fly at the expense of CPU usage.
+If you have plenty of space in `/tmp` and would rather avoid gzipping, you can explicitly pass a dump filename which doesn't end in `.gz`.
+Example: `--extra-vars="postgres_dump_name=matrix-postgres-dump.sql"`
+
+**All databases, roles, etc. on the Postgres server are migrated**.

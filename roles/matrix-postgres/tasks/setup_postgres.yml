@@ -1,7 +1,7 @@
 ---
 
 #
-# Generic tasks, no matter what kind of server we're using (internal/external)
+# Tasks related to setting up an internal postgres server
 #
 
 - import_tasks: "{{ role_path }}/tasks/migrate_postgres_data_directory.yml"
@@ -28,10 +28,10 @@
   docker_image:
     name: "{{ matrix_postgres_docker_image_to_use }}"
     source: "{{ 'pull' if ansible_version.major > 2 or ansible_version.minor > 7 else omit }}"
+    force_source: "{{ matrix_postgres_docker_image_force_pull if ansible_version.major > 2 or ansible_version.minor >= 8 else omit }}"
+    force: "{{ omit if ansible_version.major > 2 or ansible_version.minor >= 8 else matrix_postgres_docker_image_force_pull }}"
   when: matrix_postgres_enabled|bool
 
-# We always create these directories, even if an external Postgres is used,
-# because we store environment variable files there.
 - name: Ensure Postgres paths exist
   file:
     path: "{{ item }}"
@@ -42,6 +42,18 @@
   with_items:
     - "{{ matrix_postgres_base_path }}"
     - "{{ matrix_postgres_data_path }}"
+  when: matrix_postgres_enabled|bool
+
+# We do this as a separate task, because:
+# - we'd like to do it for the data path only, not for the base path (which contains root-owned environment variable files we'd like to leave as-is)
+# - we need to do it without `mode`, or we risk making certain `.conf` and other files's executable bit to flip to true
+- name: Ensure Postgres data path ownership is correct
+  file:
+    path: "{{ matrix_postgres_data_path }}"
+    state: directory
+    owner: "{{ matrix_user_username }}"
+    group: "{{ matrix_user_username }}"
+    recurse: yes
   when: matrix_postgres_enabled|bool
 
 - name: Ensure Postgres environment variables file created
@@ -61,16 +73,25 @@
     mode: 0750
   when: matrix_postgres_enabled|bool
 
-- name: Ensure matrix-make-user-admin script created
+- name: Ensure matrix-change-user-admin-status script created
   template:
-    src: "{{ role_path }}/templates/usr-local-bin/matrix-make-user-admin.j2"
-    dest: "/usr/local/bin/matrix-make-user-admin"
+    src: "{{ role_path }}/templates/usr-local-bin/matrix-change-user-admin-status.j2"
+    dest: "/usr/local/bin/matrix-change-user-admin-status"
     mode: 0750
   when: matrix_postgres_enabled|bool
 
-#
-# Tasks related to setting up an internal postgres server
-#
+- name: (Migration) Ensure old matrix-make-user-admin script deleted
+  file:
+    path: "/usr/local/bin/matrix-make-user-admin"
+    state: absent
+  when: matrix_postgres_enabled|bool
+
+- name: Ensure matrix-postgres-update-user-password-hash script created
+  template:
+    src: "{{ role_path }}/templates/usr-local-bin/matrix-postgres-update-user-password-hash.j2"
+    dest: "/usr/local/bin/matrix-postgres-update-user-password-hash"
+    mode: 0750
+  when: matrix_postgres_enabled|bool
 
 - name: Ensure matrix-postgres.service installed
   template:
@@ -125,9 +146,12 @@
     msg: "Note: You are not using a local PostgreSQL database, but some old data remains from before in `{{ matrix_postgres_data_path }}`. Feel free to delete it."
   when: "not matrix_postgres_enabled|bool and matrix_postgres_data_path_stat.stat.exists"
 
-- name: Ensure matrix-postgres-update-user-password-hash script created
-  template:
-    src: "{{ role_path }}/templates/usr-local-bin/matrix-postgres-update-user-password-hash.j2"
-    dest: "/usr/local/bin/matrix-postgres-update-user-password-hash"
-    mode: 0750
-  when: matrix_postgres_enabled|bool
+- name: Remove Postgres scripts
+  file:
+    path: "/usr/local/bin/{{ item }}"
+    state: absent
+  with_items:
+    - matrix-postgres-cli
+    - matrix-change-user-admin-status
+    - matrix-postgres-update-user-password-hash
+  when: "not matrix_postgres_enabled|bool"

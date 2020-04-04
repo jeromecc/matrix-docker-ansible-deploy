@@ -13,6 +13,7 @@ matrix_dimension_widgets_allow_self_signed_ssl_certificates: false
 matrix_dimension_base_path: "{{ matrix_base_data_path }}/dimension"
 
 matrix_dimension_docker_image: "turt2live/matrix-dimension:latest"
+matrix_dimension_docker_image_force_pull: "{{ matrix_dimension_docker_image.endswith(':latest') }}"
 
 # The user and group id correspond to the node user in the `turt2live/matrix-dimension` image.
 matrix_dimension_user_uid: '1000'
@@ -102,6 +103,12 @@ matrix_dimension_configuration_yaml: |
       echo: "mxc://t2bot.io/3407ff2db96b4e954fcbf2c6c0415a13"
       circleci: "mxc://t2bot.io/cf7d875845a82a6b21f5f66de78f6bee"
       jira: "mxc://t2bot.io/f4a38ebcc4280ba5b950163ca3e7c329"
+
+  # Settings for how Dimension is represented to the public
+  dimension:
+    # This is where Dimension is accessible from clients. Be sure to set this
+    # to your own Dimension instance.
+    publicUrl: "https://{{ matrix_server_fqn_dimension }}"
 
   # Settings for controlling how logging works
   logging:

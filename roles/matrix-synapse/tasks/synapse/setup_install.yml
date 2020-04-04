@@ -22,6 +22,8 @@
   docker_image:
     name: "{{ matrix_synapse_docker_image }}"
     source: "{{ 'pull' if ansible_version.major > 2 or ansible_version.minor > 7 else omit }}"
+    force_source: "{{ matrix_synapse_docker_image_force_pull if ansible_version.major > 2 or ansible_version.minor >= 8 else omit }}"
+    force: "{{ omit if ansible_version.major > 2 or ansible_version.minor >= 8 else matrix_synapse_docker_image_force_pull }}"
 
 - name: Check if a Synapse signing key exists
   stat:
@@ -43,6 +45,8 @@
     --user={{ matrix_user_uid }}:{{ matrix_user_gid }}
     --cap-drop=ALL
     -v {{ matrix_synapse_config_dir_path }}:/data
+    -e UID={{ matrix_user_uid }}
+    -e GID={{ matrix_user_gid }}
     -e SYNAPSE_CONFIG_PATH=/data/homeserver.yaml
     -e SYNAPSE_SERVER_NAME={{ matrix_server_fqn_matrix }}
     -e SYNAPSE_REPORT_STATS=no
@@ -51,10 +55,12 @@
   when: "not matrix_synapse_signing_key_stat.stat.exists"
 
 - name: Ensure Synapse homeserver config installed
-  template:
-    src: "{{ matrix_synapse_template_synapse_homeserver }}"
+  copy:
+    content: "{{ matrix_synapse_configuration|to_nice_yaml }}"
     dest: "{{ matrix_synapse_config_dir_path }}/homeserver.yaml"
     mode: 0644
+    owner: "{{ matrix_user_username }}"
+    group: "{{ matrix_user_username }}"
 
 - name: Ensure Synapse log config installed
   template:

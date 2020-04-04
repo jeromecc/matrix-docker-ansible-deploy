@@ -1,10 +1,10 @@
 # Prerequisites
 
-- **CentOS** (7.0+), **Debian** (9/Stretch+) or **Ubuntu** (16.04+) server. We only strive to support released stable versions of distributions, not betas or pre-releases. This playbook can take over your whole server or co-exist with other services that you have there.
+- An x86 server running **CentOS** (7 only for now; [8 is not yet supported](https://github.com/spantaleev/matrix-docker-ansible-deploy/issues/300)), **Debian** (9/Stretch+) or **Ubuntu** (16.04+). This playbook doesn't support running on ARM so it won't work on a Raspberry Pi. We only strive to support released stable versions of distributions, not betas or pre-releases. This playbook can take over your whole server or co-exist with other services that you have there.
 
 - [Python](https://www.python.org/) being installed on the server. Most distributions install Python by default, but some don't (e.g. Ubuntu 18.04) and require manual installation (something like `apt-get install python`).
 
-- a `cron`-like tool installed on the server such as `cron` or `anacron` to automatically schedule the Let's Encrypt SSL certificates. *This can be ignored if you use your own SSL certificates.*
+- a `cron`-like tool installed on the server such as `cron` or `anacron` to automatically schedule the Let's Encrypt SSL certificates's renewal. *This can be ignored if you use your own SSL certificates.*
 
 - the [Ansible](http://ansible.com/) program being installed on your own computer. It's used to run this playbook and configures your server for you. Take a look at [our guide about Ansible](ansible.md) for more information, as well as [version requirements](ansible.md#supported-ansible-versions) and alternative ways to run Ansible.
 

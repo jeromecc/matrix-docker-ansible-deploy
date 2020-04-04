@@ -34,6 +34,10 @@ When you're done with all the configuration you'd like to do, continue with [Ins
 
 ### Core service adjustments
 
+- [Configuring Synapse](configuring-playbook-synapse.md) (optional)
+
+- [Configuring Riot-web](configuring-playbook-riot-web.md) (optional)
+
 - [Storing Matrix media files on Amazon S3](configuring-playbook-s3.md) (optional)
 
 - [Using an external PostgreSQL server](configuring-playbook-external-postgres.md) (optional)
@@ -43,6 +47,8 @@ When you're done with all the configuration you'd like to do, continue with [Ins
 - [Adjusting SSL certificate retrieval](configuring-playbook-ssl-certificates.md) (optional, advanced)
 
 - [Serving your base domain using this playbook's nginx server](configuring-playbook-base-domain-serving.md) (optional)
+
+- [Configure Nginx (optional, advanced)](configuring-playbook-nginx.md) (optional, advanced)
 
 - [Using your own webserver, instead of this playbook's nginx proxy](configuring-playbook-own-webserver.md) (optional, advanced)
 
@@ -66,6 +72,8 @@ When you're done with all the configuration you'd like to do, continue with [Ins
 
 - [Setting up the LDAP password provider module](configuring-playbook-ldap-auth.md) (optional, advanced)
 
+- [Setting up Synapse Simple Antispam](configuring-playbook-synapse-simple-antispam.md) (optional, advanced)
+
 - [Setting up Matrix Corporal](configuring-playbook-matrix-corporal.md) (optional, advanced)
 
 
@@ -77,6 +85,14 @@ When you're done with all the configuration you'd like to do, continue with [Ins
 
 - [Setting up Mautrix Facebook bridging](configuring-playbook-bridge-mautrix-facebook.md) (optional)
 
+- [Setting up Mautrix Hangouts bridging](configuring-playbook-bridge-mautrix-hangouts.md) (optional)
+
 - [Setting up Appservice IRC bridging](configuring-playbook-bridge-appservice-irc.md) (optional)
 
 - [Setting up Appservice Discord bridging](configuring-playbook-bridge-appservice-discord.md) (optional)
+
+- [Setting up Appservice Slack bridging](configuring-playbook-bridge-appservice-slack.md) (optional)
+
+- [Setting up Appservice Webhooks bridging](configuring-playbook-bridge-appservice-webhooks.md) (optional)
+
+- [Setting up Email2Matrix](configuring-playbook-email2matrix.md) (optional)
