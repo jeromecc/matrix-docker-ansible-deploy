@@ -14,6 +14,8 @@ Riot has since been [renamed to Element](https://element.io/blog/welcome-to-elem
 
 If you have custom `matrix_riot_web_` variables in your `inventory/host_vars/matrix.DOMAIN/vars.yml` file, you'll need to rename them (`matrix_riot_web_` -> `matrix_client_element_`).
 
+Some other playbook variables (but not all) with `riot` in their name are also renamed. The playbook checks and warns if you are using the old name for some commonly used ones.
+
 
 ### Domain migration
 
@@ -23,7 +25,7 @@ There are a few options for handling this:
 
 - (**avoiding changes** - using the old `riot.DOMAIN` domain and avoiding DNS changes) -- to keep using `riot.DOMAIN` instead of `element.DOMAIN`, override the domain at which the playbook serves Element: `matrix_server_fqn_element: "riot.{{ matrix_domain }}"`
 
-- (**embracing changes** - using only `element.DOMAIN`) - set up the `element.DOMAIN` DNS record (see [Configuring DNS](configuring-dns.md)). You can drop the `riot.DOMAIN` in this case. If so, you may also wish to remove old SSL certificates (`rm -rf /matrix/ssl/live/riot.DOMAIN`), so that `certbot` would stop trying to renew them.
+- (**embracing changes** - using only `element.DOMAIN`) - set up the `element.DOMAIN` DNS record (see [Configuring DNS](configuring-dns.md)). You can drop the `riot.DOMAIN` in this case. If so, you may also wish to remove old SSL certificates (`rm -rf /matrix/ssl/config/live/riot.DOMAIN`) and renewal configuration (`rm -f /matrix/ssl/config/renewal/riot.DOMAIN.conf`), so that `certbot` would stop trying to renew them.
 
 - (**embracing changes and transitioning smoothly** - using both `element.DOMAIN` and `riot.DOMAIN`) - to serve Element at the new domain (`element.DOMAIN`) and to also have `riot.DOMAIN` redirect there - set up the `element.DOMAIN` DNS record (see [Configuring DNS](configuring-dns.md)) and enable Riot to Element redirection (`matrix_nginx_proxy_proxy_riot_compat_redirect_enabled: true`).
 

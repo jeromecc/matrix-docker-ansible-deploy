@@ -3,6 +3,9 @@
 **[Dimension](https://dimension.t2bot.io) can only be installed after Matrix services are installed and running.**
 If you're just installing Matrix services for the first time, please continue with the [Configuration](configuring-playbook.md) / [Installation](installing.md) flow and come back here later.
 
+**Note**: enabling Dimension, means that the `openid` API endpoints will be exposed on the Matrix Federation port (usually `8448`), even if [federation](configuring-playbook-federation.md) is disabled. It's something to be aware of, especially in terms of firewall whitelisting (make sure port `8448` is accessible).
+
+
 ## Prerequisites
 
 This playbook now supports running [Dimension](https://dimension.t2bot.io) in both a federated and an [unfederated](https://github.com/turt2live/matrix-dimension/blob/master/docs/unfederated.md) environment. This is handled automatically based on the value of `matrix_synapse_federation_enabled`.
@@ -37,7 +40,9 @@ We recommend that you create a dedicated Matrix user for Dimension (`dimension` 
 Follow our [Registering users](registering-users.md) guide to learn how to register **a regular (non-admin) user**.
 
 You are required to specify an access token (belonging to this new user) for Dimension to work.
-To get an access token for the Dimension user, follow these steps:
+To get an access token for the Dimension user, you can follow one of two options:
+
+*Through an interactive login*:
 
 1. In a private browsing session (incognito window), open Element.
 2. Log in with the `dimension` user and its password.
@@ -45,6 +50,17 @@ To get an access token for the Dimension user, follow these steps:
 2. In the settings page choose "Help & About", scroll down to the bottom and click `Access Token: <click to reveal>`.
 3. Copy the highlighted text to your configuration.
 4. Close the private browsing session. **Do not log out**. Logging out will invalidate the token, making it not work.
+
+*With CURL*
+
+```
+curl -X POST --header 'Content-Type: application/json' -d '{
+    "identifier": { "type": "m.id.user", "user": "YourDimensionUsername" },
+    "password": "YourDimensionPassword",
+    "type": "m.login.password"
+}' 'https://matrix.YOURDOMAIN/_matrix/client/r0/login'
+```
+*Change the "YourDimensionUser/Pass" URL accordigly*
 
 **Access tokens are sensitive information. Do not include them in any bug reports, messages, or logs. Do not share the access token with anyone.**
 

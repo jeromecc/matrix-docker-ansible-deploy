@@ -5,6 +5,7 @@
 
   roles:
     - matrix-base
+    - matrix-dynamic-dns
     - matrix-mailer
     - matrix-postgres
     - matrix-corporal
@@ -14,6 +15,7 @@
     - matrix-bridge-appservice-irc
     - matrix-bridge-mautrix-facebook
     - matrix-bridge-mautrix-hangouts
+    - matrix-bridge-mautrix-signal
     - matrix-bridge-mautrix-telegram
     - matrix-bridge-mautrix-whatsapp
     - matrix-bridge-mx-puppet-discord
@@ -23,7 +25,10 @@
     - matrix-bridge-mx-puppet-twitter
     - matrix-bridge-mx-puppet-instagram
     - matrix-bridge-sms
+    - matrix-bot-matrix-reminder-bot
     - matrix-synapse
+    - matrix-synapse-admin
+    - matrix-registration
     - matrix-client-element
     - matrix-jitsi
     - matrix-ma1sd
@@ -31,4 +36,5 @@
     - matrix-email2matrix
     - matrix-nginx-proxy
     - matrix-coturn
+    - matrix-aux
     - matrix-common-after

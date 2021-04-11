@@ -56,11 +56,19 @@ The default authentication mode of Jitsi is `internal`, however LDAP is also sup
 ```yaml
 matrix_jitsi_enable_auth: true
 matrix_jitsi_auth_type: ldap
-matrix_jitsi_ldap_url: ldap://ldap.DOMAIN  # or ldaps:// if using tls
-matrix_jitsi_ldap_base: "OU=People,DC=DOMAIN"
-matrix_jitsi_ldap_filter: "(&(uid=%u)(employeeType=active))"
-matrix_jitsi_ldap_use_tls: false
-matrix_jitsi_ldap_start_tls: true
+matrix_jitsi_ldap_url: "ldap://ldap.DOMAIN"
+matrix_jitsi_ldap_base: "OU=People,DC=DOMAIN
+#matrix_jitsi_ldap_binddn: ""
+#matrix_jitsi_ldap_bindpw: ""
+matrix_jitsi_ldap_filter: "uid=%u"
+matrix_jitsi_ldap_auth_method: "bind"
+matrix_jitsi_ldap_version: "3"
+matrix_jitsi_ldap_use_tls: true
+matrix_jitsi_ldap_tls_ciphers: ""
+matrix_jitsi_ldap_tls_check_peer: true
+matrix_jitsi_ldap_tls_cacert_file: "/etc/ssl/certs/ca-certificates.crt"
+matrix_jitsi_ldap_tls_cacert_dir: "/etc/ssl/certs"
+matrix_jitsi_ldap_start_tls: false
 ```
 
 For more information refer to the [docker-jitsi-meet](https://github.com/jitsi/docker-jitsi-meet#authentication-using-ldap) and the [saslauthd `LDAP_SASLAUTHD`](https://github.com/winlibs/cyrus-sasl/blob/master/saslauthd/LDAP_SASLAUTHD) documentation.
@@ -83,44 +91,33 @@ matrix_jitsi_jvb_container_extra_arguments:
 
 ## (Optional) Fine tune Jitsi
 
-You may want to suspend unused video layers until they are requested again, to save up resources on both server and clients.
+Sample **additional** `inventory/host_vars/matrix.DOMAIN/vars.yml` configuration to save up resources (explained below):
+
+```yaml
+matrix_jitsi_web_custom_config_extension: |
+  config.enableLayerSuspension = true;
+
+  config.disableAudioLevels = true;
+
+  // Limit the number of video feeds forwarded to each client
+  config.channelLastN = 4;
+
+matrix_jitsi_web_config_resolution_width_ideal_and_max: 480
+matrix_jitsi_web_config_resolution_height_ideal_and_max: 240
+```
+
+You may want to **suspend unused video layers** until they are requested again, to save up resources on both server and clients.
 Read more on this feature [here](https://jitsi.org/blog/new-off-stage-layer-suppression-feature/)
 For this add this line to your `inventory/host_vars/matrix.DOMAIN/vars.yml` configuration:
 
-```yaml
-matrix_jitsi_web_config_enableLayerSuspension: true
-```
+You may wish to **disable audio levels** to avoid excessive refresh of the client-side page and decrease the CPU consumption involved.
 
-You may wish to disable audio levels to avoid excessive refresh of the client-side page and decrease the CPU consumption involved.
-For this add this line to your `inventory/host_vars/matrix.DOMAIN/vars.yml` configuration:
-
-```yaml
-matrix_jitsi_web_config_disableAudioLevels: true
-```
-
-You may want to limit the number of video feeds forwarded to each client, to save up resources on both server and clients. As clients’ bandwidth and CPU may not bear the load, use this setting to avoid lag and crashes.
+You may want to **limit the number of video feeds forwarded to each client**, to save up resources on both server and clients. As clients’ bandwidth and CPU may not bear the load, use this setting to avoid lag and crashes.
 This feature is found by default in other webconference applications such as Office 365 Teams (limit is set to 4).
-Read how it works [here](https://github.com/jitsi/jitsi-videobridge/blob/master/doc/last-n.md) and performance evaluation on this [study](https://jitsi.org/wp-content/uploads/2016/12/nossdav2015lastn.pdf)
-For this add this line to your `inventory/host_vars/matrix.DOMAIN/vars.yml` configuration:
+Read how it works [here](https://github.com/jitsi/jitsi-videobridge/blob/master/doc/last-n.md) and performance evaluation on this [study](https://jitsi.org/wp-content/uploads/2016/12/nossdav2015lastn.pdf).
 
-```yaml
-matrix_jitsi_web_config_channelLastN: 4
-```
+You may want to **limit the maximum video resolution**, to save up resources on both server and clients.
 
-To enable the variables that allow you to manage the video configuration you must add the following line to your `inventory/host_vars/matrix.DOMAIN/vars.yml` configuration:
-
-```yaml
-matrix_jitsi_web_config_constraints_enabled: true
-```
-
-You may want to limit the maximum video resolution, to save up resources on both server and clients.
-For example, to set resolution to 480.
-For this add this two lines to your `inventory/host_vars/matrix.DOMAIN/vars.yml` configuration:
-
-```yaml
-matrix_jitsi_web_config_constraints_video_height_ideal: 480
-matrix_jitsi_web_config_constraints_video_height_max: 480
-```
 
 ## Apply changes
 

@@ -33,6 +33,7 @@ When you're done with all the configuration you'd like to do, continue with [Ins
 
 - [Setting up the Jitsi video-conferencing platform](configuring-playbook-jitsi.md) (optional)
 
+- [Setting Dynamic DNS](configuring-playbook-dynamic-dns.md) (optional)
 
 ### Core service adjustments
 
@@ -68,6 +69,10 @@ When you're done with all the configuration you'd like to do, continue with [Ins
 
 ### Authentication and user-related
 
+- [Setting up Synapse Admin](configuring-playbook-synapse-admin.md) (optional)
+
+- [Setting up matrix-registration](configuring-playbook-matrix-registration.md) (optional)
+
 - [Setting up the REST authentication password provider module](configuring-playbook-rest-auth.md) (optional, advanced)
 
 - [Setting up the Shared Secret Auth password provider module](configuring-playbook-shared-secret-auth.md) (optional, advanced)
@@ -88,6 +93,8 @@ When you're done with all the configuration you'd like to do, continue with [Ins
 - [Setting up Mautrix Facebook bridging](configuring-playbook-bridge-mautrix-facebook.md) (optional)
 
 - [Setting up Mautrix Hangouts bridging](configuring-playbook-bridge-mautrix-hangouts.md) (optional)
+
+- [Setting up Mautrix Signal bridging](configuring-playbook-bridge-mautrix-signal.md) (optional)
 
 - [Setting up Appservice IRC bridging](configuring-playbook-bridge-appservice-irc.md) (optional)
 
@@ -111,4 +118,9 @@ When you're done with all the configuration you'd like to do, continue with [Ins
 
 - [Setting up Email2Matrix](configuring-playbook-email2matrix.md) (optional)
 
-- [Setting up Matrix SMS bridging](configuring-playbook-matrix-bridge-sms.md) (optional)
+- [Setting up Matrix SMS bridging](configuring-playbook-bridge-matrix-bridge-sms.md) (optional)
+
+
+### Bots
+
+- [Setting up matrix-reminder-bot](configuring-playbook-bot-matrix-reminder-bot.md) (optional)
