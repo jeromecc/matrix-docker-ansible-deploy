@@ -48,12 +48,12 @@ If you're managing the base domain by yourself somehow, you'll need to set up se
 
 To make things easy for you to set up, this playbook generates and hosts 2 well-known files on the Matrix domain's server (e.g. `https://matrix.example.com/.well-known/matrix/server` and `https://matrix.example.com/.well-known/matrix/client`), even though this is the wrong place to host them.
 
-You have 2 options when it comes to installing the files on the base domain's server:
+You have 3 options when it comes to installing the files on the base domain's server:
 
 
 ### (Option 1): **Copying the files manually** to your base domain's server
 
-**Hint**: Option 2 (below) is generally a better way to do this. Make sure to go with that one, if possible.
+**Hint**: Option 2 and 3 (below) are generally a better way to do this. Make sure to go with them, if possible.
 
 All you need to do is:
 
@@ -65,7 +65,16 @@ This is relatively easy to do and possibly your only choice if you can only host
 It is, however, **a little fragile**, as future updates performed by this playbook may regenerate the well-known files and you may need to notice that and copy them over again.
 
 
-### (Option 2): **Setting up reverse-proxying** of the well-known files from the base domain's server to the Matrix server
+### (Option 2): **Serving the base domain** from the Matrix server via the playbook
+
+If you don't need the base domain (e.g. `example.com`) for anything else (hosting a website, etc.), you can point it to the Matrix server's IP address and tell the playbook to configure it.
+
+This is the easiest way to set up well-known serving -- letting the playbook handle the whole base domain for you (including SSL certificates, etc.). However, if you need to use the base domain for other things (such as hosting some website, etc.), going with Option 1 or Option 2 might be more suitable.
+
+See [Serving the base domain](configuring-playbook-base-domain-serving.md) to learn how the playbook can help you set it up.
+
+
+### (Option 3): **Setting up reverse-proxying** of the well-known files from the base domain's server to the Matrix server
 
 This option is less fragile and generally better.
 
@@ -104,10 +113,20 @@ server {
 </VirtualHost>
 ```
 
-**For Caddy**, it would be something like this:
+**For Caddy 2**, it would be something like this:
 
 ```caddy
-proxy /.well-known/matrix https://matrix.DOMAIN
+reverse_proxy /.well-known/matrix/* https://matrix.DOMAIN {
+	header_up Host {http.reverse_proxy.upstream.hostport}
+}
+```
+
+**For Caddy 1**, it would be something like this:
+
+```caddy
+proxy /.well-known/matrix/ https://matrix.DOMAIN {
+    header_upstream Host {http.reverse_proxy.upstream.hostport}
+}
 ```
 
 **For HAProxy**, it would be something like this:
@@ -126,7 +145,7 @@ backend matrix-backend
 	reqirep ^(GET|POST|HEAD)\ /.well-known/matrix/(.*) \1\ /\2
 	# Rewrite redirects as ProxyPassReverse does
 	acl response-is-redirect res.hdr(Location) -m found
-	rsprep ^Location:\ (http|https)://matrix.example.com\/(.*) Location:\ \1://matrix.exapmle.com/.well-known/matrix/\2 if response-is-redirect
+	rsprep ^Location:\ (http|https)://matrix.example.com\/(.*) Location:\ \1://matrix.example.com/.well-known/matrix/\2 if response-is-redirect
 ```
 
 Make sure to:

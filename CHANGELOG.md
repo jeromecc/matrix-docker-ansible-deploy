@@ -1,3 +1,151 @@
+# 2020-07-03
+
+## Steam bridging support via mx-puppet-steam
+
+Thanks to [Hugues Morisset](https://github.com/izissise)'s efforts, the playbook now supports bridging to [Steam](https://steamapp.com/) via the [mx-puppet-steam](https://github.com/icewind1991/mx-puppet-steam) bridge. See our [Setting up MX Puppet Steam bridging](docs/configuring-playbook-bridge-mx-puppet-steam.md) documentation page for getting started.
+
+
+# 2020-07-01
+
+## Discord bridging support via mx-puppet-discord
+
+Thanks to [Hugues Morisset](https://github.com/izissise)'s efforts, the playbook now supports bridging to [Discord](https://discordapp.com/) via the [mx-puppet-discord](https://github.com/Sorunome/mx-puppet-discord) bridge. See our [Setting up MX Puppet Discord bridging](docs/configuring-playbook-bridge-mx-puppet-discord.md) documentation page for getting started.
+
+**Note**: this is a new Discord bridge. The playbook still retains Discord bridging via [matrix-appservice-discord](docs/configuring-playbook-bridge-appservice-discord.md). You're free too use the bridge that serves you better, or even both (for different users and use-cases).
+
+
+# 2020-06-30
+
+## Instagram and Twitter bridging support
+
+Thanks to [Johanna Dorothea Reichmann](https://github.com/jdreichmann)'s efforts, the playbook now supports bridging to [Instagram](https://www.instagram.com/) via the [mx-puppet-instagram](https://github.com/Sorunome/mx-puppet-instagram) bridge. See our [Setting up MX Puppet Instagram bridging](docs/configuring-playbook-bridge-mx-puppet-instagram.md) documentation page for getting started.
+
+Thanks to [Tulir Asokan](https://github.com/tulir)'s efforts, the playbook now supports bridging to [Twitter](https://twitter.com/) via the [mx-puppet-twitter](https://github.com/Sorunome/mx-puppet-twitter) bridge. See our [Setting up MX Puppet Twitter bridging](docs/configuring-playbook-bridge-mx-puppet-twitter.md) documentation page for getting started.
+
+
+# 2020-06-28
+
+## (Post Mortem / fixed Security Issue) Re-enabling User Directory search powered by the ma1sd Identity Server
+
+User Directory search requests used to go to the ma1sd identity server by default, which queried its own stores and the Synapse database.
+
+ma1sd's [security issue](https://github.com/ma1uta/ma1sd/issues/44) has been fixed in version `2.4.0`, with [this commit](ma1uta/ma1sd@2bb5a734d11662b06471113cf3d6b4cee5e33a85). `ma1sd 2.4.0` is now the default version for this playbook. For more information on what happened, please check the mentioned issue.
+
+We are re-enabling user directory search with this update. Those who would like to keep it disabled can use this configuration: `matrix_nginx_proxy_proxy_matrix_user_directory_search_enabled: false`
+
+As always, re-running the playbook is enough to get the updated bits.
+
+# 2020-06-11
+
+## SMS bridging requires db reset
+
+The current version of [matrix-sms-bridge](https://github.com/benkuly/matrix-sms-bridge) needs you to delete the database to work as expected. Just remove `/matrix/matrix-sms-bridge/database/*`. It also adds a new requried var `matrix_sms_bridge_default_region`.
+
+To reuse your existing rooms, invite `@smsbot:yourServer` to the room or write a message. You are also able to use automated room creation with telephonenumers by writing `sms send -t 01749292923 "Hello World"` in a room with `@smsbot:yourServer`. See [the docs](https://github.com/benkuly/matrix-sms-bridge) for more information.
+
+# 2020-06-05
+
+## SMS bridging support
+
+Thanks to [benkuly](https://github.com/benkuly)'s efforts, the playbook now supports bridging to SMS (with one telephone number only) via [matrix-sms-bridge](https://github.com/benkuly/matrix-sms-bridge).
+
+See our [Setting up Matrix SMS bridging](docs/configuring-playbook-matrix-bridge-sms.md) documentation page for getting started.
+
+
+# 2020-05-19
+
+## (Compatibility Break / Security Issue) Disabling User Directory search powered by the ma1sd Identity Server
+
+User Directory search requests used to go to the ma1sd identity server by default, which queried its own stores and the Synapse database.
+
+ma1sd current has [a security issue](https://github.com/ma1uta/ma1sd/issues/44), which made it leak information about all users - including users created by bridges, etc.
+
+Until the issue gets fixed, we're making User Directory search not go to ma1sd by default. You **need to re-run the playbook and restart services to apply this workaround**.
+
+*If you insist on restoring the old behavior* (**which has a security issue!**), you *might* use this configuration: `matrix_nginx_proxy_proxy_matrix_user_directory_search_enabled: "{{ matrix_ma1sd_enabled }}"`
+
+
+# 2020-04-28
+
+## Newer IRC bridge (with potential breaking change)
+
+This upgrades matrix-appservice-irc from 0.14.1 to 0.16.0.  Upstream
+made a change to how you define manual mappings.  If you added a
+`mapping` to your configuration, you will need to update it accoring
+to the [upstream
+instructions](https://github.com/matrix-org/matrix-appservice-irc/blob/master/CHANGELOG.md#0150-2020-02-05).
+If you did not include `mappings` in your configuration for IRC, no
+change is necessary.  `mappings` is not part of the default
+configuration.
+
+
+# 2020-04-23
+
+## Slack bridging support
+
+Thanks to [Rodrigo Belem](https://github.com/rbelem)'s efforts, the playbook now supports bridging to [Slack](https://slack.com) via the [mx-puppet-slack](https://github.com/Sorunome/mx-puppet-slack) bridge.
+
+See our [Setting up MX Puppet Slack bridging](docs/configuring-playbook-bridge-mx-puppet-slack.md) documentation page for getting started.
+
+
+# 2020-04-09
+
+## Skype bridging support
+
+Thanks to [Rodrigo Belem](https://github.com/rbelem)'s efforts, the playbook now supports bridging to [Skype](https://www.skype.com) via the [mx-puppet-skype](https://github.com/Sorunome/mx-puppet-skype) bridge.
+
+See our [Setting up MX Puppet Skype bridging](docs/configuring-playbook-bridge-mx-puppet-skype.md) documentation page for getting started.
+
+
+# 2020-04-05
+
+## Private Jitsi support
+
+The [Jitsi support](#jitsi-support) we had landed a few weeks ago was working well, but it was always open to the whole world.
+
+Running such an open instance is not desirable to most people, so [teutat3s](https://github.com/teutat3s) has contributed support for making Jitsi use authentication.
+
+To make your Jitsi server more private, see the [configure internal Jitsi authentication and guests mode](docs/configuring-playbook-jitsi.md#optional-configure-internal-jitsi-authentication-and-guests-mode) section in our Jitsi documentation.
+
+
+# 2020-04-03
+
+## (Potential Backward Compatibility Break) ma1sd replaces mxisd
+
+Thanks to [Marcel Partap](https://github.com/eMPee584)'s efforts, the [mxisd](https://github.com/kamax-io/mxisd) identity server, which has been deprecated for a long time, has finally been replaced by [ma1sd](https://github.com/ma1uta/ma1sd), a compatible fork.
+
+**If you're using the default playbook configuration**, you don't need to do anything -- your mxisd installation will be replaced with ma1sd and all existing data will be migrated automatically the next time you run the playbook.
+
+**If you're doing something more special** (defining custom `matrix_mxisd_*` variables), the playbook will ask you to rename them to `matrix_ma1sd_*`.
+You're also encouraged to test that ma1sd works well for such a more custom setup.
+
+
+# 2020-03-29
+
+## Archlinux support
+
+Thanks to [Christian Lupus](https://github.com/christianlupus)'s efforts, the playbook now supports installing to an [Archlinux](https://www.archlinux.org/) server.
+
+
+# 2020-03-24
+
+## Jitsi support
+
+The playbook can now (optionally) install the [Jitsi](https://jitsi.org/) video-conferencing platform and integrate it with [Riot](docs/configuring-playbook-riot-web.md).
+
+See our [Jitsi documentation page](docs/configuring-playbook-jitsi.md) to get started.
+
+
+# 2020-03-15
+
+## Raspberry Pi support
+
+Thanks to [Gergely Horváth](https://github.com/hooger)'s effort, the playbook supports installing to a Raspberry Pi server, for at least some of the services.
+
+Since most ready-made container images do not support that architecture, we achieve this by building images locally on the device itself.
+See our [Self-building documentation page](docs/self-building.md) for how to get started.
+
+
 # 2020-02-26
 
 ## Riot-web themes are here

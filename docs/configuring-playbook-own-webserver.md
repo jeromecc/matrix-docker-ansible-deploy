@@ -22,7 +22,7 @@ For an alternative, make sure to check Method #2 as well.
 
 No matter which external webserver you decide to go with, you'll need to:
 
-1) Make sure your web server user (something like `http`, `apache`, `www-data`, `nginx`) is part of the `matrix` group. You should run something like this: `usermod -a -G matrix nginx`
+1) Make sure your web server user (something like `http`, `apache`, `www-data`, `nginx`) is part of the `matrix` group. You should run something like this: `usermod -a -G matrix nginx`. This allows your webserver user to access files owned by the `matrix` group. When using an external nginx webserver, this allows it to read configuration files from `/matrix/nginx-proxy/conf.d`. When using another server, it would make other files, such as `/matrix/static-files/.well-known`, accessible to it.
 
 2) Edit your configuration file (`inventory/host_vars/matrix.<your-domain>/vars.yml`) to disable the integrated nginx server:
 
@@ -144,8 +144,7 @@ matrix_nginx_proxy_container_extra_arguments:
   - '--label "traefik.enable=true"'
 
   # The Nginx proxy container will receive traffic from these subdomains
-  # (Replace DOMAIN with your domain, e.g. example.com)
-  - '--label "traefik.http.routers.matrix-nginx-proxy.rule=Host(`matrix.DOMAIN`,`riot.DOMAIN`,`dimension.DOMAIN`)"'
+  - '--label "traefik.http.routers.matrix-nginx-proxy.rule=Host(`{{ matrix_server_fqn_matrix }}`,`{{ matrix_server_fqn_riot }}`,`{{ matrix_server_fqn_dimension }}`)"'
 
   # (The 'web-secure' entrypoint must bind to port 443 in Traefik config)
   - '--label "traefik.http.routers.matrix-nginx-proxy.entrypoints=web-secure"'
@@ -161,8 +160,7 @@ matrix_synapse_container_extra_arguments:
   - '--label "traefik.enable=true"'
 
   # The Synapse container will receive traffic from this subdomain
-  # (Replace DOMAIN with your domain, e.g. example.com)
-  - '--label "traefik.http.routers.matrix-synapse.rule=Host(`matrix.DOMAIN`)"'
+  - '--label "traefik.http.routers.matrix-synapse.rule=Host(`{{ matrix_server_fqn_matrix }}`)"'
 
   # (The 'synapse' entrypoint must bind to port 8448 in Traefik config)
   - '--label "traefik.http.routers.matrix-synapse.entrypoints=synapse"'
